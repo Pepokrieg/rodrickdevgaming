@@ -177,6 +177,14 @@ for (let i = 1; i <= totalRenders; i++) {
     });
 }
 
+// Precargar imágenes para el modal
+function preloadRenderImages() {
+    renders.forEach(render => {
+        const img = new Image();
+        img.src = render.image;
+    });
+}
+
 let renderIndex = 0;
 let renderAutoPlayInterval;
 
@@ -187,9 +195,9 @@ function renderRendersSlider() {
     
     if (!track) return;
     
-    // Generar HTML de las tarjetas de renders
-    track.innerHTML = renders.map((render) => `
-        <div class="project-card render-card" data-id="${render.id}">
+    // Generar HTML de las tarjetas de renders (cambiado data-id por data-index)
+    track.innerHTML = renders.map((render, index) => `
+        <div class="project-card render-card" data-index="${index}">
             <img src="${render.image}" alt="${render.title}" class="project-image render-image" loading="lazy">
             <div class="project-info">
                 <h3 class="project-title">${render.title}</h3>
@@ -211,11 +219,11 @@ function renderRendersSlider() {
         });
     });
     
-    // Evento click en tarjetas para abrir modal
+    // Evento click en tarjetas para abrir modal (corregido)
     document.querySelectorAll('.render-card').forEach(card => {
         card.addEventListener('click', function() {
-            const id = parseInt(this.dataset.id);
-            openModal(id);
+            const index = parseInt(this.dataset.index);
+            openModal(index);
         });
     });
     
@@ -302,15 +310,19 @@ function openModal(index) {
     const modalImg = document.getElementById('modalImage');
     const counter = document.getElementById('modalCounter');
     
+    // Forzar recarga de la imagen para evitar retrasos
+    modalImg.src = '';
+    setTimeout(() => {
+        modalImg.src = renders[index].image;
+    }, 50);
+    
     modal.style.display = 'flex';
-    modalImg.src = renders[index].image;
     counter.textContent = `${index + 1} / ${renders.length}`;
     
-    // Disparar evento personalizado para que otros componentes sepan que el modal está abierto
-    const event = new Event('shown');
-    modal.dispatchEvent(event);
+    // Disparar evento personalizado para pausar autoplays
+    modal.dispatchEvent(new Event('shown'));
     
-    // Pausar autoplays al abrir el modal
+    // Pausar autoplays
     stopAutoPlay();
     stopRenderAutoPlay();
 }
@@ -319,9 +331,8 @@ function closeModal() {
     const modal = document.getElementById('imageModal');
     modal.style.display = 'none';
     
-    // Disparar evento personalizado para reanudar
-    const event = new Event('hidden');
-    modal.dispatchEvent(event);
+    // Disparar evento para reanudar autoplays
+    modal.dispatchEvent(new Event('hidden'));
 }
 
 function modalPrev() {
@@ -366,19 +377,20 @@ function initModalControls() {
 
 // Inicialización mejorada
 document.addEventListener('DOMContentLoaded', () => {
+    // Precargar imágenes de renders
+    preloadRenderImages();
+    
     // 1. Inicializar Render Slider
     renderRendersSlider();
     initRenderControls();
-    // El autoplay de renders se activa solo cuando la sección es visible
     initRenderAutoplayOnVisibility();
     
     // 2. Inicializar Proyectos Slider
     renderSlider();
     initSliderControls();
-    // El autoplay de proyectos se activa solo cuando la sección es visible
     initProjectsAutoplayOnVisibility();
     
-    // 3. Inicializar Modal (independiente)
+    // 3. Inicializar Modal
     initModalControls();
     
     // 4. Funciones de navegación y UI
@@ -387,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeaderScroll();
     initScrollAnimations();
     
-    // 5. Pausar autoplays al abrir el modal
+    // 5. Pausar autoplays al abrir/cerrar modal
     const modal = document.getElementById('imageModal');
     if (modal) {
         modal.addEventListener('shown', () => {
