@@ -166,38 +166,81 @@ function initSliderControls() {
     });
 }
 
-// Datos de renders (detección automática)
-const renders = [];
-const totalRenders = 24; // Solo cambias este número cuando agregues más
-for (let i = 1; i <= totalRenders; i++) {
-    renders.push({
-        id: i,
-        image: `images/renders/render_${i}.png`,
-        title: `Render ${i}`
-    });
-}
+// ============================================
+// DATOS DE RENDERS POR PROYECTO
+// ============================================
+const renderProjects = [
+    {
+        id: 'sturmpanzer',
+        title: 'Sturmpanzer 4',
+        folder: 'sturmpanzer',
+        total: 15,
+        start: 1,
+        tags: ['Blender', '3ds Max', 'Hard Surfaces', 'Historical', 'Game Asset'],
+        description: 'Trabajo en proceso: modelo hecho con seguimiento de planos de blueprints, optimizado para videojuegos, dándole un alto nivel de detalle con mallas de bajo poligonaje (low-poly)'
+    },
+    {
+        id: 'survivors',
+        title: 'Survivors Haven',
+        folder: 'survivors',
+        total: 5,
+        start: 16,
+        tags: ['Blender', 'Unity', 'Rigging', 'Organic Surface', 'Human Model', 'Gameplay'],
+        description: 'Modelos humanoides de jugador y NPC, topología en low-poly y con rigging de Mixamo'
+    },
+    {
+        id: 'sci-fi_build',
+        title: 'Fortaleza Sci-fi',
+        folder: 'sci-fi_build',
+        total: 4,
+        start: 21,
+        tags: ['Blender', 'Sci-Fi', 'Environment Modeling', 'Hard Surface', 'Modular Asset'],
+        description: 'Trabajo en proceso: modelo de estructura futurista con alto nivel de detalle y poligonaje.'
+    }
+];
 
-// Precargar imágenes para el modal
-function preloadRenderImages() {
-    renders.forEach(render => {
-        const img = new Image();
-        img.src = render.image;
-    });
-}
+// ============================================
+// GENERAR DATOS DE RENDERS POR PROYECTO
+// ============================================
+const rendersData = {};
+renderProjects.forEach(project => {
+    rendersData[project.id] = [];
+    for (let i = 0; i < project.total; i++) {
+        const num = project.start + i;
+        rendersData[project.id].push({
+            id: num,
+            image: `images/renders/${project.folder}/render_${num}.png`,
+            title: `${project.title} - Render ${i + 1}`
+        });
+    }
+});
 
-let renderIndex = 0;
-let renderAutoPlayInterval;
+// ============================================
+// ESTADO DE CADA SLIDER DE RENDER
+// ============================================
+const renderStates = {};
+renderProjects.forEach(project => {
+    renderStates[project.id] = {
+        currentIndex: 0,
+        interval: null,
+        isVisible: false
+    };
+});
 
-// Renderizar slider de renders
-function renderRendersSlider() {
-    const track = document.getElementById('rendersTrack');
-    const dotsContainer = document.getElementById('rendersDots');
+// ============================================
+// FUNCIONES PARA CADA SLIDER DE RENDER
+// ============================================
+function renderRenderSlider(projectId) {
+    const track = document.getElementById(`${projectId}Track`);
+    const dotsContainer = document.getElementById(`${projectId}Dots`);
+    const project = renderProjects.find(p => p.id === projectId);
+    const renders = rendersData[projectId];
     
-    if (!track) return;
+    if (!track || !project) return;
     
-    // Generar HTML de las tarjetas de renders (cambiado data-id por data-index)
+    // Generar HTML
     track.innerHTML = renders.map((render, index) => `
-        <div class="project-card render-card" data-index="${index}">
+        <div class="project-card render-card" data-project="${projectId}" data-index="${index}">
             <img src="${render.image}" alt="${render.title}" class="project-image render-image" loading="lazy">
             <div class="project-info">
                 <h3 class="project-title">${render.title}</h3>
@@ -207,110 +250,196 @@ function renderRendersSlider() {
     
     // Generar puntos
     dotsContainer.innerHTML = Array.from({ length: renders.length }, (_, i) => `
-        <div class="dot ${i === renderIndex ? 'active' : ''}" data-index="${i}"></div>
+        <div class="dot ${i === renderStates[projectId].currentIndex ? 'active' : ''}" data-project="${projectId}" data-index="${i}"></div>
     `).join('');
     
     // Eventos de los puntos
-    document.querySelectorAll('#rendersDots .dot').forEach(dot => {
+    document.querySelectorAll(`#${projectId}Dots .dot`).forEach(dot => {
         dot.addEventListener('click', (e) => {
             const index = parseInt(e.target.dataset.index);
-            goToRenderSlide(index);
-            resetRenderAutoPlay();
+            goToRenderSlide(projectId, index);
+            resetRenderAutoPlay(projectId);
         });
     });
     
-    // Evento click en tarjetas para abrir modal (corregido)
-    document.querySelectorAll('.render-card').forEach(card => {
+    // Evento click en tarjetas
+    document.querySelectorAll(`#${projectId}Track .render-card`).forEach(card => {
         card.addEventListener('click', function() {
             const index = parseInt(this.dataset.index);
-            openModal(index);
+            const projectId = this.dataset.project;
+            openModal(projectId, index);
         });
     });
     
-    updateRenderSliderPosition();
+    updateRenderSliderPosition(projectId);
 }
 
-// Actualizar posición del slider de renders
-function updateRenderSliderPosition() {
-    const track = document.getElementById('rendersTrack');
+function updateRenderSliderPosition(projectId) {
+    const track = document.getElementById(`${projectId}Track`);
     if (!track || track.children.length === 0) return;
     
+    const state = renderStates[projectId];
     const cardWidth = track.children[0].offsetWidth;
     const gap = 32;
     const slideWidth = cardWidth + gap;
     
-    track.style.transform = `translateX(-${renderIndex * slideWidth}px)`;
+    track.style.transform = `translateX(-${state.currentIndex * slideWidth}px)`;
     
-    document.querySelectorAll('#rendersDots .dot').forEach((dot, i) => {
-        dot.classList.toggle('active', i === renderIndex);
+    document.querySelectorAll(`#${projectId}Dots .dot`).forEach((dot, i) => {
+        dot.classList.toggle('active', i === state.currentIndex);
     });
 }
 
-function goToRenderSlide(index) {
-    renderIndex = Math.max(0, Math.min(index, renders.length - 1));
-    updateRenderSliderPosition();
+function goToRenderSlide(projectId, index) {
+    const state = renderStates[projectId];
+    const renders = rendersData[projectId];
+    state.currentIndex = Math.max(0, Math.min(index, renders.length - 1));
+    updateRenderSliderPosition(projectId);
 }
 
-function nextRenderSlide() {
-    if (renderIndex < renders.length - 1) {
-        goToRenderSlide(renderIndex + 1);
+function nextRenderSlide(projectId) {
+    const state = renderStates[projectId];
+    const renders = rendersData[projectId];
+    if (state.currentIndex < renders.length - 1) {
+        goToRenderSlide(projectId, state.currentIndex + 1);
     } else {
-        goToRenderSlide(0);
+        goToRenderSlide(projectId, 0);
     }
-    resetRenderAutoPlay();
+    resetRenderAutoPlay(projectId);
 }
 
-function prevRenderSlide() {
-    if (renderIndex > 0) {
-        goToRenderSlide(renderIndex - 1);
+function prevRenderSlide(projectId) {
+    const state = renderStates[projectId];
+    const renders = rendersData[projectId];
+    if (state.currentIndex > 0) {
+        goToRenderSlide(projectId, state.currentIndex - 1);
     } else {
-        goToRenderSlide(renders.length - 1);
+        goToRenderSlide(projectId, renders.length - 1);
     }
-    resetRenderAutoPlay();
+    resetRenderAutoPlay(projectId);
 }
 
-// Autoplay para renders
-function startRenderAutoPlay() {
-    renderAutoPlayInterval = setInterval(() => {
-        nextRenderSlide();
-    }, 4000); // Cambia cada 4 segundos (más rápido que proyectos)
+// ============================================
+// AUTOPLAY PARA CADA SLIDER DE RENDER
+// ============================================
+function startRenderAutoPlay(projectId) {
+    const state = renderStates[projectId];
+    if (state.interval) clearInterval(state.interval);
+    state.interval = setInterval(() => {
+        nextRenderSlide(projectId);
+    }, 4000);
 }
 
-function resetRenderAutoPlay() {
-    clearInterval(renderAutoPlayInterval);
-    startRenderAutoPlay();
+function stopRenderAutoPlay(projectId) {
+    const state = renderStates[projectId];
+    if (state.interval) {
+        clearInterval(state.interval);
+        state.interval = null;
+    }
 }
 
-function stopRenderAutoPlay() {
-    clearInterval(renderAutoPlayInterval);
+function resetRenderAutoPlay(projectId) {
+    const state = renderStates[projectId];
+    if (state.interval) {
+        clearInterval(state.interval);
+        state.interval = null;
+    }
+    if (state.isVisible) {
+        startRenderAutoPlay(projectId);
+    }
 }
 
-// Controles de renders
+function stopAllRenderAutoplays() {
+    renderProjects.forEach(p => stopRenderAutoPlay(p.id));
+}
+
+function startAllRenderAutoplays() {
+    renderProjects.forEach(p => {
+        if (renderStates[p.id].isVisible) {
+            startRenderAutoPlay(p.id);
+        }
+    });
+}
+
+// ============================================
+// CONTROLES DE CADA SLIDER
+// ============================================
 function initRenderControls() {
-    const prevBtn = document.getElementById('rendersPrevBtn');
-    const nextBtn = document.getElementById('rendersNextBtn');
-    const sliderContainer = document.querySelector('.renders-slider');
-    
-    if (prevBtn) prevBtn.addEventListener('click', prevRenderSlide);
-    if (nextBtn) nextBtn.addEventListener('click', nextRenderSlide);
-    
-    if (sliderContainer) {
-        sliderContainer.addEventListener('mouseenter', stopRenderAutoPlay);
-        sliderContainer.addEventListener('mouseleave', startRenderAutoPlay);
-    }
+    renderProjects.forEach(project => {
+        const prevBtn = document.querySelector(`.prev-btn[data-project="${project.id}"]`);
+        const nextBtn = document.querySelector(`.next-btn[data-project="${project.id}"]`);
+        const sliderContainer = document.querySelector(`.renders-slider[data-project="${project.id}"]`);
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => prevRenderSlide(project.id));
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => nextRenderSlide(project.id));
+        }
+        
+        if (sliderContainer) {
+            sliderContainer.addEventListener('mouseenter', () => stopRenderAutoPlay(project.id));
+            sliderContainer.addEventListener('mouseleave', () => {
+                if (renderStates[project.id].isVisible) {
+                    startRenderAutoPlay(project.id);
+                }
+            });
+        }
+    });
 }
 
-// Modal para ver imagen ampliada
-let currentModalIndex = 0;
+// ============================================
+// VISIBILIDAD DE CADA SLIDER
+// ============================================
+function initRenderVisibility() {
+    renderProjects.forEach(project => {
+        const section = document.querySelector(`.renders-slider[data-project="${project.id}"]`);
+        if (!section) return;
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const state = renderStates[project.id];
+                if (entry.isIntersecting) {
+                    state.isVisible = true;
+                    if (!state.interval) {
+                        startRenderAutoPlay(project.id);
+                    }
+                } else {
+                    state.isVisible = false;
+                    stopRenderAutoPlay(project.id);
+                }
+            });
+        }, { threshold: 0.3 });
+        
+        observer.observe(section);
+    });
+}
 
-// Mejorar función openModal para que notifique al slider
-function openModal(index) {
-    currentModalIndex = index;
+// ============================================
+// MODAL PARA VER IMAGEN AMPLIADA (ACTUALIZADO)
+// ============================================
+let currentModalData = { projectId: null, index: 0 };
+let modalImagesPreloaded = false;
+
+function preloadAllRenderImages() {
+    if (modalImagesPreloaded) return;
+    renderProjects.forEach(project => {
+        rendersData[project.id].forEach(render => {
+            const img = new Image();
+            img.src = render.image;
+        });
+    });
+    modalImagesPreloaded = true;
+}
+
+function openModal(projectId, index) {
+    currentModalData = { projectId, index };
+    const renders = rendersData[projectId];
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('modalImage');
     const counter = document.getElementById('modalCounter');
     
-    // Forzar recarga de la imagen para evitar retrasos
+    // Forzar recarga de la imagen
     modalImg.src = '';
     setTimeout(() => {
         modalImg.src = renders[index].image;
@@ -319,39 +448,40 @@ function openModal(index) {
     modal.style.display = 'flex';
     counter.textContent = `${index + 1} / ${renders.length}`;
     
-    // Disparar evento personalizado para pausar autoplays
+    // Disparar evento para pausar autoplays
     modal.dispatchEvent(new Event('shown'));
     
-    // Pausar autoplays
+    // Pausar todos los autoplays
+    stopAllRenderAutoplays();
     stopAutoPlay();
-    stopRenderAutoPlay();
 }
 
 function closeModal() {
     const modal = document.getElementById('imageModal');
     modal.style.display = 'none';
-    
-    // Disparar evento para reanudar autoplays
     modal.dispatchEvent(new Event('hidden'));
 }
 
 function modalPrev() {
-    if (currentModalIndex > 0) {
-        openModal(currentModalIndex - 1);
+    const { projectId, index } = currentModalData;
+    const renders = rendersData[projectId];
+    if (index > 0) {
+        openModal(projectId, index - 1);
     } else {
-        openModal(renders.length - 1);
+        openModal(projectId, renders.length - 1);
     }
 }
 
 function modalNext() {
-    if (currentModalIndex < renders.length - 1) {
-        openModal(currentModalIndex + 1);
+    const { projectId, index } = currentModalData;
+    const renders = rendersData[projectId];
+    if (index < renders.length - 1) {
+        openModal(projectId, index + 1);
     } else {
-        openModal(0);
+        openModal(projectId, 0);
     }
 }
 
-// Event listeners del modal
 function initModalControls() {
     const modal = document.getElementById('imageModal');
     const closeBtn = document.getElementById('modalClose');
@@ -362,28 +492,41 @@ function initModalControls() {
     if (prevBtn) prevBtn.addEventListener('click', modalPrev);
     if (nextBtn) nextBtn.addEventListener('click', modalNext);
     
-    // Cerrar con tecla ESC
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeModal();
         if (e.key === 'ArrowLeft' && modal.style.display === 'flex') modalPrev();
         if (e.key === 'ArrowRight' && modal.style.display === 'flex') modalNext();
     });
     
-    // Cerrar al hacer clic fuera de la imagen
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
     });
+    
+    // Pausar/reanudar autoplays al abrir/cerrar modal
+    modal.addEventListener('shown', () => {
+        stopAllRenderAutoplays();
+        stopAutoPlay();
+    });
+    
+    modal.addEventListener('hidden', () => {
+        startAllRenderAutoplays();
+        startAutoPlay();
+    });
 }
 
-// Inicialización mejorada
+// ============================================
+// INICIALIZACIÓN
+// ============================================
 document.addEventListener('DOMContentLoaded', () => {
     // Precargar imágenes de renders
-    preloadRenderImages();
+    preloadAllRenderImages();
     
-    // 1. Inicializar Render Slider
-    renderRendersSlider();
+    // 1. Inicializar cada slider de renders
+    renderProjects.forEach(project => {
+        renderRenderSlider(project.id);
+    });
     initRenderControls();
-    initRenderAutoplayOnVisibility();
+    initRenderVisibility();
     
     // 2. Inicializar Proyectos Slider
     renderSlider();
@@ -398,19 +541,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initMobileMenu();
     initHeaderScroll();
     initScrollAnimations();
-    
-    // 5. Pausar autoplays al abrir/cerrar modal
-    const modal = document.getElementById('imageModal');
-    if (modal) {
-        modal.addEventListener('shown', () => {
-            stopRenderAutoPlay();
-            stopAutoPlay();
-        });
-        modal.addEventListener('hidden', () => {
-            startRenderAutoPlay();
-            startAutoPlay();
-        });
-    }
 });
 
 // Funciones previas que mantienes

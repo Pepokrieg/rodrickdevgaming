@@ -41,25 +41,81 @@
             </div>
         </section>
 
-        <!-- Sección de Renders (entre Hero y Projects) -->
+        <!-- Sección de Modelado 3D -->
         <section id="renders" class="renders">
             <div class="container">
                 <h2>Modelado 3D</h2>
                 <p class="section-subtitle">Galería de renders de proyectos de modelado 3D</p>
                 
-                <!-- Slider de renders -->
-                <div class="slider-container renders-slider">
-                    <div class="slider-track" id="rendersTrack">
-                        <!-- Los renders se cargarán dinámicamente -->
+                <!-- Proyecto 1: Sturmpanzer 4 -->
+                <div class="render-project">
+                    <div class="render-project-header">
+                        <h3>Sturmpanzer 4</h3>
+                        <p class="render-project-desc">Trabajo en proceso: modelo hecho con seguimiento de planos de blueprints, optimizado para videojuegos, dándole un alto nivel de detalle con mallas de bajo poligonaje (low-poly)</p>
+                        <div class="render-project-tags">
+                            <span class="tag">Blender</span>
+                            <span class="tag">3ds Max</span>
+                            <span class="tag">Hard Surfaces</span>
+                            <span class="tag">Historical</span>
+                            <span class="tag">Game Asset</span>
+                        </div>
                     </div>
-                    
-                    <!-- Botones de navegación -->
-                    <button class="slider-btn prev-btn" id="rendersPrevBtn">❮</button>
-                    <button class="slider-btn next-btn" id="rendersNextBtn">❯</button>
+                    <div class="slider-container renders-slider" data-project="sturmpanzer">
+                        <div class="slider-track" id="sturmpanzerTrack">
+                            <!-- Se cargará dinámicamente -->
+                        </div>
+                        <button class="slider-btn prev-btn" data-project="sturmpanzer">❮</button>
+                        <button class="slider-btn next-btn" data-project="sturmpanzer">❯</button>
+                    </div>
+                    <div class="slider-dots" id="sturmpanzerDots"></div>
                 </div>
-                
-                <!-- Puntos/dots -->
-                <div class="slider-dots" id="rendersDots"></div>
+
+                <!-- Proyecto 2: Survivors Haven -->
+                <div class="render-project">
+                    <div class="render-project-header">
+                        <h3>Survivors Haven</h3>
+                        <p class="render-project-desc">Modelos humanoides de jugador y NPC, topología en low-poly y con rigging de Mixamo</p>
+                        <div class="render-project-tags">
+                            <span class="tag">Blender</span>
+                            <span class="tag">Unity</span>
+                            <span class="tag">Rigging</span>
+                            <span class="tag">Organic Surface</span>
+                            <span class="tag">Human Model</span>
+                            <span class="tag">Gameplay</span>
+                        </div>
+                    </div>
+                    <div class="slider-container renders-slider" data-project="survivors">
+                        <div class="slider-track" id="survivorsTrack">
+                            <!-- Se cargará dinámicamente -->
+                        </div>
+                        <button class="slider-btn prev-btn" data-project="survivors">❮</button>
+                        <button class="slider-btn next-btn" data-project="survivors">❯</button>
+                    </div>
+                    <div class="slider-dots" id="survivorsDots"></div>
+                </div>
+
+                <!-- Proyecto 3: Fortaleza Sci-fi -->
+                <div class="render-project">
+                    <div class="render-project-header">
+                        <h3>Fortaleza Sci-fi</h3>
+                        <p class="render-project-desc">Trabajo en proceso: modelo de estructura futurista con alto nivel de detalle y poligonaje.</p>
+                        <div class="render-project-tags">
+                            <span class="tag">Blender</span>
+                            <span class="tag">Sci-Fi</span>
+                            <span class="tag">Environment Modeling</span>
+                            <span class="tag">Hard Surface</span>
+                            <span class="tag">Modular Asset</span>
+                        </div>
+                    </div>
+                    <div class="slider-container renders-slider" data-project="sci-fi_build">
+                        <div class="slider-track" id="sciFiTrack">
+                            <!-- Se cargará dinámicamente -->
+                        </div>
+                        <button class="slider-btn prev-btn" data-project="sci-fi_build">❮</button>
+                        <button class="slider-btn next-btn" data-project="sci-fi_build">❯</button>
+                    </div>
+                    <div class="slider-dots" id="sciFiDots"></div>
+                </div>
             </div>
         </section>
 
